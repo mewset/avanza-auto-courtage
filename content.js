@@ -6,25 +6,27 @@
   let isSwitching = false;
   let capturedHeaders = {}; // Store security headers here
 
-  const FEE_CLASSES = {
-    MINI: 'MINI',
-    SMALL: 'SMALL',
-    MEDIUM: 'MEDIUM',
-    FAST: 'FASTPRIS',
-  };
-
-  const BREAKPOINTS = [
-    { limit: 15600, class: FEE_CLASSES.MINI },
-    { limit: 46000, class: FEE_CLASSES.SMALL },
-    { limit: 143500, class: FEE_CLASSES.MEDIUM },
-    { limit: Infinity, class: FEE_CLASSES.FAST },
+  const STANDARD_BREAKPOINTS = [
+    { limit: 15600, class: 'MINI' },
+    { limit: 46000, class: 'SMALL' },
+    { limit: 143500, class: 'MEDIUM' },
+    { limit: Infinity, class: 'FASTPRIS' },
   ];
 
-  function solveOptimal(amount) {
-    for (const bp of BREAKPOINTS) {
+  const PB_BREAKPOINTS = [
+    { limit: 39333, class: 'PRIVATE_BANKING_MINI' },
+    { limit: 180000, class: 'PRIVATE_BANKING' },
+    { limit: Infinity, class: 'PRIVATE_BANKING_FASTPRIS' },
+  ];
+
+  function solveOptimal(amount, currentClass) {
+    const isPB = currentClass && currentClass.startsWith('PRIVATE_BANKING');
+    const breakpoints = isPB ? PB_BREAKPOINTS : STANDARD_BREAKPOINTS;
+
+    for (const bp of breakpoints) {
       if (amount < bp.limit) return bp.class;
     }
-    return FEE_CLASSES.FAST;
+    return breakpoints[breakpoints.length - 1].class;
   }
 
   const log = (msg, data) => {
@@ -111,12 +113,9 @@
     if (!price || !volume) return;
 
     const total = price * volume;
-    const optimal = solveOptimal(total);
-
-    log(`Order: ${total.toLocaleString()} SEK. Optimal: ${optimal}`);
 
     try {
-      // Check status endpoint - reuse headers
+      // Fetch current status first to know the tier (Standard vs PB)
       const statusRes = await originalFetch('/_api/trading/courtageclass/courtageclass/', {
         headers: {
           'Content-Type': 'application/json',
@@ -133,6 +132,9 @@
 
       const statusData = await statusRes.json();
       const current = statusData.currentCourtageClass;
+      const optimal = solveOptimal(total, current);
+
+      log(`Order: ${total.toLocaleString()} SEK. Current: ${current}, Optimal: ${optimal}`);
 
       if (current !== optimal) {
         log(`Switching ${current} -> ${optimal}...`);

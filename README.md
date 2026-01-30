@@ -16,6 +16,7 @@
 - **Automatisk switch**: Byter klass med ett knapptryck (i bakgrunden) utan att ladda om sidan.
 - **Spara pengar**: Säkerställer att du aldrig betalar mer courtage än nödvändigt.
 - **Säkert**: All kod körs lokalt i din webbläsare. Ingen data skickas externt.
+- **Private Banking Support**: Stöd för PB Mini, PB och PB Fast Pris.
 
 ## Installation (Manuell / Utvecklarläge)
 
